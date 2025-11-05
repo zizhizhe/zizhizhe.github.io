@@ -108,6 +108,33 @@
     "mode": "RGBA"
   },
   {
+    "path": "client 01 ARS fb cover banner.png",
+    "name": "client 01 ARS fb cover banner.png",
+    "size_bytes": 1979648,
+    "modified": "2025-11-04T18:24:22.926380Z",
+    "width": 1640,
+    "height": 924,
+    "mode": "RGB"
+  },
+  {
+    "path": "client 01 post 2.png",
+    "name": "client 01 post 2.png",
+    "size_bytes": 1049919,
+    "modified": "2025-11-04T19:23:25.765536Z",
+    "width": 1080,
+    "height": 780,
+    "mode": "RGB"
+  },
+  {
+    "path": "client 01 post 3.png",
+    "name": "client 01 post 3.png",
+    "size_bytes": 1258814,
+    "modified": "2025-11-05T14:05:03.380722Z",
+    "width": 1080,
+    "height": 880,
+    "mode": "RGB"
+  },
+  {
     "path": "client work 2.png",
     "name": "client work 2.png",
     "size_bytes": 914402,

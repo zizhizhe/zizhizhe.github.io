@@ -7,17 +7,24 @@
 
 <!-- Montserrat -->
 <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;600&display=swap" rel="stylesheet">
+<!-- Font Awesome -->
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
 
 <style>
   :root{
     --bg: #ffffff;
     --fg: #111;
-    --muted: rgba(0,0,0,0.06);
     --gap: 12px;
     --max-width: 1100px;
     --logo-size: 120px;
   }
-  html,body{height:100%;margin:0;background:var(--bg);font-family:"Montserrat",system-ui,-apple-system,Segoe UI,Roboto,"Helvetica Neue",Arial;}
+  html,body{
+    height:100%;
+    margin:0;
+    background:var(--bg);
+    font-family:"Montserrat",system-ui,-apple-system,Segoe UI,Roboto,"Helvetica Neue",Arial;
+    overflow:hidden; /* we'll auto-scroll instead */
+  }
 
   .wrap{
     max-width:var(--max-width);
@@ -32,6 +39,8 @@
     align-items:center;
     justify-content:center;
     margin-bottom:18px;
+    z-index:2;
+    position:relative;
   }
   .logo {
     width:var(--logo-size);
@@ -42,21 +51,19 @@
     display:flex;
     align-items:center;
     justify-content:center;
-    background:linear-gradient(180deg,#fff,#fff);
+    background:#fff;
   }
   .logo img{width:100%;height:100%;object-fit:cover;display:block;}
 
-  h1{
-    display:none; /* visually hidden title for accessibility */
-  }
+  h1{display:none;}
 
   /* Masonry using CSS columns */
   .masonry{
     column-gap: var(--gap);
-    column-count: 1; /* will be adjusted via media queries */
+    column-count: 1;
     width:100%;
+    transition: transform 0.5s ease;
   }
-
   @media(min-width:480px){ .masonry{ column-count:2; } }
   @media(min-width:800px){ .masonry{ column-count:3; } }
   @media(min-width:1200px){ .masonry{ column-count:4; } }
@@ -70,14 +77,12 @@
     border-radius:10px;
     overflow:hidden;
     box-shadow: 0 6px 20px rgba(0,0,0,0.04);
-    transform-origin: center;
   }
 
   figure.card img{
     width:100%;
     height:auto;
     display:block;
-    vertical-align:middle;
     object-fit:cover;
   }
 
@@ -88,27 +93,28 @@
     opacity:.7;
   }
 
-  /* subtle fade-in animation */
-  .fade-in{
-    animation: fadeIn .45s ease both;
-  }
-  @keyframes fadeIn{ from { opacity:0; transform: translateY(6px); } to { opacity:1; transform:none; } }
+  .fade-in{animation: fadeIn .45s ease both;}
+  @keyframes fadeIn{from{opacity:0;transform:translateY(6px);}to{opacity:1;transform:none;}}
 
-  /* floating status badge */
+  /* bottom banner */
   .status{
     position:fixed;
     right:18px;
     bottom:18px;
     background:rgba(0,0,0,0.02);
-    padding:8px 12px;
+    padding:10px 18px;
     border-radius:999px;
-    font-size:12px;
+    font-size:13px;
     color:var(--fg);
-    box-shadow: 0 6px 18px rgba(0,0,0,0.06);
+    box-shadow:0 6px 18px rgba(0,0,0,0.06);
+    display:flex;
+    align-items:center;
+    gap:8px;
   }
-
-  /* Keep everything clean and minimal */
-  a{color:inherit;text-decoration:none}
+  .status i{
+    color:black;
+    font-size:18px;
+  }
 </style>
 </head>
 <body>
@@ -126,139 +132,79 @@
     </main>
   </div>
 
-  <div class="status" id="status">Loading images…</div>
+  <div class="status" id="status">
+    <i class="fab fa-facebook"></i>
+    Hire one of our designers
+  </div>
 
 <script>
-/*
-Behavior:
-- Loads images.json (array of objects with a 'path' field)
-- Renders an initial batch
-- Infinite scroll: when near bottom, appends more
-- Real-time random insertion: every INTERVAL ms, randomly picks an image and inserts it at a random spot
-*/
-
-const JSON_PATH = 'images.json'; // ensure this is correct relative to index.html
-const INITIAL_BATCH = 20;
-const BATCH_SIZE = 12;
-const RANDOM_INSERT_INTERVAL = 2500; // ms
+const JSON_PATH = 'images.json';
+const INITIAL_BATCH = 25;
+const RANDOM_INSERT_INTERVAL = 2500;
 const FADE_CLASS = 'fade-in';
 
-let images = [];        // array of image metadata objects
-let available = [];     // copy of images used for random picks
+let images = [], available = [];
 let masonry = document.getElementById('masonry');
-let statusEl = document.getElementById('status');
 
-function setStatus(text){
-  statusEl.textContent = text;
-}
-
-// fetch JSON
+// fetch images.json
 fetch(JSON_PATH)
-  .then(r => {
-    if (!r.ok) throw new Error('Failed to fetch '+JSON_PATH);
-    return r.json();
-  })
+  .then(r => r.json())
   .then(arr => {
     images = Array.isArray(arr) ? arr : [];
     available = images.slice();
-    setStatus(`${images.length} images found`);
-    if (images.length === 0) setStatus('No images found — run the Python scanner to create images.json');
     renderInitial();
-    setupScrollHandler();
     startRandomInsertions();
+    startAutoScroll();
   })
-  .catch(err => {
-    console.error(err);
-    setStatus('Error loading images.json — open console for details');
-  });
+  .catch(err => console.error(err));
 
-// create a card element for an image entry
 function createCard(meta){
   const fig = document.createElement('figure');
-  fig.className = 'card ' + FADE_CLASS;
-
+  fig.className = 'card '+FADE_CLASS;
   const img = document.createElement('img');
-  img.decoding = 'async';
-  img.loading = 'lazy';
-
-  // If JSON provides a path, use it; otherwise skip
   img.src = meta.path;
   img.alt = meta.name || '';
-
   fig.appendChild(img);
-
-  if (meta.name || meta.size_bytes){
-    const m = document.createElement('div');
-    m.className = 'meta';
-    let txt = meta.name ? meta.name : '';
-    if (meta.size_bytes) txt += (txt ? ' • ' : '') + (Math.round(meta.size_bytes/1024) + ' KB');
-    m.textContent = txt;
-    fig.appendChild(m);
-  }
-
-  // remove the fade class after animation to avoid re-trigger issues
-  fig.addEventListener('animationend', () => fig.classList.remove(FADE_CLASS));
-
   return fig;
 }
 
 function renderInitial(){
   shuffleArray(available);
-  const batch = available.splice(0, INITIAL_BATCH);
-  batch.forEach(m => masonry.appendChild(createCard(m)));
-  setStatus(`${images.length} images — showing ${INITIAL_BATCH}`);
+  available.splice(0, INITIAL_BATCH).forEach(m => masonry.appendChild(createCard(m)));
 }
 
-// infinite scroll handler
-function setupScrollHandler(){
-  window.addEventListener('scroll', () => {
-    const nearBottom = (window.innerHeight + window.scrollY) >= (document.body.offsetHeight - 800);
-    if (nearBottom) appendBatch();
-  });
-}
-
-let loadingBatch = false;
-function appendBatch(){
-  if (loadingBatch) return;
-  loadingBatch = true;
-  if (available.length < BATCH_SIZE) available = available.concat(images.slice()); // refill pool
-  const batch = available.splice(0, BATCH_SIZE);
-  batch.forEach(m => masonry.appendChild(createCard(m)));
-  setStatus(`${images.length} images — total displayed: ${document.querySelectorAll('.masonry .card').length}`);
-  loadingBatch = false;
-}
-
-// Randomly insert a single image somewhere in the grid every X ms
 function startRandomInsertions(){
   setInterval(() => {
     if (!images.length) return;
     const pick = images[Math.floor(Math.random()*images.length)];
     const card = createCard(pick);
-
-    // pick random insertion index among existing children
     const children = masonry.children;
-    const idx = children.length ? Math.floor(Math.random() * children.length) : 0;
-    if (idx >= children.length) {
-      masonry.appendChild(card);
-    } else {
-      masonry.insertBefore(card, children[idx]);
-    }
-
-    // keep the page from growing without bound: trim oldest if too many cards
-    const MAX_CARDS = 250;
-    while (masonry.children.length > MAX_CARDS) masonry.removeChild(masonry.firstElementChild);
-
-    setStatus(`${images.length} images — total displayed: ${masonry.children.length}`);
+    const idx = children.length ? Math.floor(Math.random()*children.length) : 0;
+    if (idx >= children.length) masonry.appendChild(card);
+    else masonry.insertBefore(card, children[idx]);
+    if (masonry.children.length > 250) masonry.removeChild(masonry.firstElementChild);
   }, RANDOM_INSERT_INTERVAL);
 }
 
-// small util: shuffle array in-place
 function shuffleArray(a){
-  for (let i = a.length - 1; i > 0; i--){
-    const j = Math.floor(Math.random() * (i + 1));
-    [a[i], a[j]] = [a[j], a[i]];
-  }
+  for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}
   return a;
+}
+
+// gentle automatic scroll (vertical + horizontal sway)
+let scrollY = 0;
+let direction = 1;
+function startAutoScroll(){
+  const speed = 0.2; // pixels per frame
+  function step(){
+    scrollY += speed * direction;
+    if (scrollY > document.body.scrollHeight - window.innerHeight || scrollY < 0){
+      direction *= -1; // reverse direction when reaching end
+    }
+    window.scrollTo({ top: scrollY, left: Math.sin(Date.now()/4000)*80, behavior:'auto' });
+    requestAnimationFrame(step);
+  }
+  requestAnimationFrame(step);
 }
 </script>
 </body>
