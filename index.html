@@ -33,7 +33,7 @@
     top: 0;
     left: 0;
     width: 100%;
-    height: 100%;
+    height: auto;
     column-gap: var(--gap);
     column-count: 1;
     z-index: 0;
@@ -154,33 +154,33 @@
   <!-- Floating Facebook button -->
   <div class="status" id="status">
     <i class="fab fa-facebook"></i>
-    Visit our Facebook
+    Hire a designer
   </div>
 
 <script>
 const JSON_PATH = 'images.json';
-const INITIAL_BATCH = 25;
-const RANDOM_INSERT_INTERVAL = 2500;
-const FADE_CLASS = 'fade-in';
-
-let images = [], available = [];
-const masonry = document.getElementById('masonry');
+const INITIAL_BATCH = 60; // enough to fill visible space
+const LOOP_INSERT_DELAY = 1200; // ms between adding new image at bottom
+let images = [];
+let masonry = document.getElementById('masonry');
+let scrollOffset = 0;
+let imageIndex = 0;
 
 // Load images.json
 fetch(JSON_PATH)
   .then(r => r.json())
   .then(arr => {
     images = Array.isArray(arr) ? arr : [];
-    available = images.slice();
+    if (!images.length) return;
     renderInitial();
-    startRandomInsertions();
-    startAutoScroll();
+    startLoopingStream();
+    animateScroll();
   })
   .catch(err => console.error(err));
 
 function createCard(meta){
   const fig = document.createElement('figure');
-  fig.className = 'card ' + FADE_CLASS;
+  fig.className = 'card';
   const img = document.createElement('img');
   img.src = meta.path;
   img.alt = meta.name || '';
@@ -189,41 +189,36 @@ function createCard(meta){
 }
 
 function renderInitial(){
-  shuffleArray(available);
-  available.splice(0, INITIAL_BATCH).forEach(m => masonry.appendChild(createCard(m)));
-}
-
-function startRandomInsertions(){
-  setInterval(() => {
-    if (!images.length) return;
-    const pick = images[Math.floor(Math.random()*images.length)];
-    const card = createCard(pick);
-    const children = masonry.children;
-    const idx = children.length ? Math.floor(Math.random()*children.length) : 0;
-    if (idx >= children.length) masonry.appendChild(card);
-    else masonry.insertBefore(card, children[idx]);
-    if (masonry.children.length > 250) masonry.removeChild(masonry.firstElementChild);
-  }, RANDOM_INSERT_INTERVAL);
-}
-
-function shuffleArray(a){
-  for (let i = a.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [a[i], a[j]] = [a[j], a[i]];
+  const count = Math.min(INITIAL_BATCH, images.length);
+  for (let i = 0; i < count; i++) {
+    const meta = images[i % images.length];
+    masonry.appendChild(createCard(meta));
   }
-  return a;
 }
 
-// Auto-scrolling upward
-let scrollY = 0;
-function startAutoScroll(){
-  const speed = 0.25;
-  function step(){
-    scrollY += speed;
-    if (scrollY > document.body.scrollHeight - window.innerHeight) {
-      scrollY = 0;
+function startLoopingStream(){
+  setInterval(() => {
+    // add new image at bottom
+    const next = images[imageIndex % images.length];
+    masonry.appendChild(createCard(next));
+    imageIndex++;
+    // remove topmost when too many to keep DOM light
+    if (masonry.children.length > 180) {
+      masonry.removeChild(masonry.firstElementChild);
     }
-    window.scrollTo({ top: scrollY, left: Math.sin(Date.now()/4000)*80, behavior: 'auto' });
+  }, LOOP_INSERT_DELAY);
+}
+
+// Smooth upward translation animation
+function animateScroll(){
+  const speed = 0.3; // pixels per frame
+  function step(){
+    scrollOffset -= speed;
+    masonry.style.transform = `translateY(${scrollOffset}px)`;
+    // reset to prevent overflow jump
+    if (Math.abs(scrollOffset) > 4000) {
+      scrollOffset = 0;
+    }
     requestAnimationFrame(step);
   }
   requestAnimationFrame(step);
