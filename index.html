@@ -5,9 +5,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1" />
 <title>Zizhizhe 自职者 — Gallery</title>
 
-<!-- Montserrat -->
 <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;600&display=swap" rel="stylesheet">
-<!-- Font Awesome -->
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
 
 <style>
@@ -24,10 +22,9 @@
     margin: 0;
     background: var(--bg);
     font-family: "Montserrat", system-ui, -apple-system, Segoe UI, Roboto, "Helvetica Neue", Arial;
-    overflow: hidden; /* auto-scroll handled manually */
+    overflow: hidden;
   }
 
-  /* Masonry behind everything */
   #masonry {
     position: fixed;
     top: 0;
@@ -65,7 +62,6 @@
     to { opacity: 1; transform: none; }
   }
 
-  /* Center white strip with logo */
   .center-strip {
     position: fixed;
     top: 50%;
@@ -102,7 +98,6 @@
 
   h1 { display: none; }
 
-  /* Floating Facebook button */
   .status {
     position: fixed;
     right: 18px;
@@ -122,6 +117,7 @@
   }
   .status i {
     color: #1877f2;
+    background: #ffffff;
     font-size: 18px;
     transition: transform 0.25s ease;
   }
@@ -137,12 +133,10 @@
 </head>
 <body>
 
-  <!-- Background masonry grid -->
   <main>
     <div id="masonry" class="masonry" aria-live="polite"></div>
   </main>
 
-  <!-- Foreground centered white strip with logo -->
   <div class="center-strip">
     <div class="logo" aria-hidden="true">
       <img src="https://avatars.githubusercontent.com/u/242250430?s=200&v=4" alt="Zizhizhe logo">
@@ -151,7 +145,6 @@
 
   <h1>Zizhizhe 自职者 — Gallery</h1>
 
-  <!-- Floating Facebook button -->
   <div class="status" id="status">
     <i class="fab fa-facebook"></i>
     Hire a designer
@@ -159,14 +152,13 @@
 
 <script>
 const JSON_PATH = 'images.json';
-const INITIAL_BATCH = 60; // enough to fill visible space
-const LOOP_INSERT_DELAY = 1200; // ms between adding new image at bottom
+const INITIAL_BATCH = 60;
+const LOOP_INSERT_DELAY = 1200;
 let images = [];
 let masonry = document.getElementById('masonry');
 let scrollOffset = 0;
 let imageIndex = 0;
 
-// Load images.json
 fetch(JSON_PATH)
   .then(r => r.json())
   .then(arr => {
@@ -198,24 +190,21 @@ function renderInitial(){
 
 function startLoopingStream(){
   setInterval(() => {
-    // add new image at bottom
     const next = images[imageIndex % images.length];
     masonry.appendChild(createCard(next));
     imageIndex++;
-    // remove topmost when too many to keep DOM light
-    if (masonry.children.length > 180) {
+    if (masonry.children.length > 80) {
       masonry.removeChild(masonry.firstElementChild);
     }
   }, LOOP_INSERT_DELAY);
 }
 
-// Smooth upward translation animation
 function animateScroll(){
-  const speed = 0.3; // pixels per frame
+  const speed = 0.3;
   function step(){
     scrollOffset -= speed;
     masonry.style.transform = `translateY(${scrollOffset}px)`;
-    // reset to prevent overflow jump
+
     if (Math.abs(scrollOffset) > 4000) {
       scrollOffset = 0;
     }
@@ -224,7 +213,6 @@ function animateScroll(){
   requestAnimationFrame(step);
 }
 
-// Facebook floating button
 document.getElementById('status').addEventListener('click', () => {
   window.open('https://www.facebook.com/zizhizhe', '_blank');
 });
